@@ -5,7 +5,7 @@
 pub struct LogicalPlanNode {
     #[prost(
         oneof = "logical_plan_node::LogicalPlanType",
-        tags = "1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34"
+        tags = "1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37"
     )]
     pub logical_plan_type: ::core::option::Option<logical_plan_node::LogicalPlanType>,
 }
@@ -79,6 +79,12 @@ pub mod logical_plan_node {
         Dml(::prost::alloc::boxed::Box<super::DmlNode>),
         #[prost(message, tag = "34")]
         EmptyTableScan(super::EmptyTableScanNode),
+        #[prost(message, tag = "35")]
+        CreateMemoryTable(::prost::alloc::boxed::Box<super::CreateMemoryTableNode>),
+        #[prost(message, tag = "36")]
+        DropTable(super::DropTableNode),
+        #[prost(message, tag = "37")]
+        DropCatalogSchema(super::DropCatalogSchemaNode),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -244,10 +250,15 @@ pub struct HashRepartition {
     #[prost(uint64, tag = "2")]
     pub partition_count: u64,
 }
-#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EmptyRelationNode {
     #[prost(bool, tag = "1")]
     pub produce_one_row: bool,
+    /// Output schema. Absent in plans from older versions, in which case the
+    /// schema is empty. Needed for e.g. `CREATE TABLE t (a INT)`, whose input is
+    /// an EmptyRelation carrying the table's columns.
+    #[prost(message, optional, tag = "2")]
+    pub schema: ::core::option::Option<super::datafusion_common::DfSchema>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CreateExternalTableNode {
@@ -318,6 +329,54 @@ pub struct CreateCatalogNode {
     #[prost(bool, tag = "2")]
     pub if_not_exists: bool,
     #[prost(message, optional, tag = "3")]
+    pub schema: ::core::option::Option<super::datafusion_common::DfSchema>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ColumnDefaultNode {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub expr: ::core::option::Option<LogicalExprNode>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CreateMemoryTableNode {
+    #[prost(message, optional, tag = "1")]
+    pub name: ::core::option::Option<TableReference>,
+    #[prost(message, optional, boxed, tag = "2")]
+    pub input: ::core::option::Option<::prost::alloc::boxed::Box<LogicalPlanNode>>,
+    #[prost(message, optional, tag = "3")]
+    pub constraints: ::core::option::Option<super::datafusion_common::Constraints>,
+    /// repeated (not a map) so that column order is preserved
+    #[prost(message, repeated, tag = "4")]
+    pub column_defaults: ::prost::alloc::vec::Vec<ColumnDefaultNode>,
+    #[prost(bool, tag = "5")]
+    pub if_not_exists: bool,
+    #[prost(bool, tag = "6")]
+    pub or_replace: bool,
+    #[prost(bool, tag = "7")]
+    pub temporary: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DropTableNode {
+    #[prost(message, optional, tag = "1")]
+    pub name: ::core::option::Option<TableReference>,
+    #[prost(bool, tag = "2")]
+    pub if_exists: bool,
+    #[prost(message, optional, tag = "3")]
+    pub schema: ::core::option::Option<super::datafusion_common::DfSchema>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DropCatalogSchemaNode {
+    #[prost(string, tag = "1")]
+    pub schema_name: ::prost::alloc::string::String,
+    /// set when the schema reference is catalog-qualified
+    #[prost(string, optional, tag = "2")]
+    pub catalog_name: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(bool, tag = "3")]
+    pub if_exists: bool,
+    #[prost(bool, tag = "4")]
+    pub cascade: bool,
+    #[prost(message, optional, tag = "5")]
     pub schema: ::core::option::Option<super::datafusion_common::DfSchema>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

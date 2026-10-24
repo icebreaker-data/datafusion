@@ -41,8 +41,8 @@ use datafusion_common::format::{
     ExplainAnalyzeCategories, ExplainFormat, MetricCategory, MetricType,
 };
 use datafusion_common::{
-    NullEquality, Result, TableReference, assert_or_internal_err, context,
-    internal_datafusion_err, internal_err, not_impl_err, plan_err,
+    NullEquality, Result, SchemaReference, TableReference, assert_or_internal_err,
+    context, internal_datafusion_err, internal_err, not_impl_err, plan_err,
 };
 use datafusion_datasource::file_format::FileFormat;
 use datafusion_datasource::file_format::{
@@ -66,9 +66,10 @@ use datafusion_expr::{
     DistinctOn, DropView, Expr, JoinConstraint, LogicalPlan, LogicalPlanBuilder,
     ScalarUDF, SortExpr, Statement, WindowUDF, dml,
     logical_plan::{
-        Aggregate, CreateCatalog, CreateCatalogSchema, CreateExternalTable, CreateView,
-        DdlStatement, Distinct, EmptyRelation, Extension, Join, Prepare, Projection,
-        Repartition, Sort, SubqueryAlias, TableScan, TableScanBuilder, Values, Window,
+        Aggregate, CreateCatalog, CreateCatalogSchema, CreateExternalTable,
+        CreateMemoryTable, CreateView, DdlStatement, Distinct, DropCatalogSchema,
+        DropTable, EmptyRelation, Extension, Join, Prepare, Projection, Repartition,
+        Sort, SubqueryAlias, TableScan, TableScanBuilder, Values, Window,
         builder::project,
     },
 };
@@ -785,7 +786,15 @@ impl AsLogicalPlan for LogicalPlanNode {
                     .build()
             }
             LogicalPlanType::EmptyRelation(empty_relation) => {
-                LogicalPlanBuilder::empty(empty_relation.produce_one_row).build()
+                match &empty_relation.schema {
+                    Some(schema) => Ok(LogicalPlan::EmptyRelation(EmptyRelation {
+                        produce_one_row: empty_relation.produce_one_row,
+                        schema: Arc::new(schema.try_into()?),
+                    })),
+                    None => {
+                        LogicalPlanBuilder::empty(empty_relation.produce_one_row).build()
+                    }
+                }
             }
             LogicalPlanType::CreateExternalTable(create_extern_table) => {
                 let pb_schema = (create_extern_table.schema.clone()).ok_or_else(|| {
@@ -1183,6 +1192,76 @@ impl AsLogicalPlan for LogicalPlanNode {
                         )?
                         .build()
                 }
+            }
+            LogicalPlanType::CreateMemoryTable(create_memory_table) => {
+                let plan = create_memory_table
+                    .input
+                    .clone()
+                    .ok_or_else(|| {
+                        internal_datafusion_err!(
+                            "Protobuf deserialization error, CreateMemoryTableNode has invalid LogicalPlan input."
+                        )
+                    })?
+                    .try_into_logical_plan(ctx, extension_codec)?;
+                let constraints = (create_memory_table.constraints.clone())
+                    .ok_or_else(|| {
+                        internal_datafusion_err!(
+                            "Protobuf deserialization error, CreateMemoryTableNode was missing required table constraints."
+                        )
+                    })?;
+                let mut column_defaults =
+                    Vec::with_capacity(create_memory_table.column_defaults.len());
+                for default in &create_memory_table.column_defaults {
+                    let expr = default.expr.as_ref().ok_or_else(|| {
+                        internal_datafusion_err!(
+                            "Protobuf deserialization error, ColumnDefaultNode was missing required expr."
+                        )
+                    })?;
+                    column_defaults.push((
+                        default.name.clone(),
+                        from_proto::parse_expr(expr, ctx, extension_codec)?,
+                    ));
+                }
+                Ok(LogicalPlan::Ddl(DdlStatement::CreateMemoryTable(
+                    CreateMemoryTable {
+                        name: from_table_reference(
+                            create_memory_table.name.as_ref(),
+                            "CreateMemoryTable",
+                        )?,
+                        constraints: constraints.into(),
+                        input: Arc::new(plan),
+                        if_not_exists: create_memory_table.if_not_exists,
+                        or_replace: create_memory_table.or_replace,
+                        column_defaults,
+                        temporary: create_memory_table.temporary,
+                    },
+                )))
+            }
+            LogicalPlanType::DropTable(drop_table) => {
+                Ok(LogicalPlan::Ddl(DdlStatement::DropTable(DropTable {
+                    name: from_table_reference(drop_table.name.as_ref(), "DropTable")?,
+                    if_exists: drop_table.if_exists,
+                    schema: Arc::new(convert_required!(drop_table.schema)?),
+                })))
+            }
+            LogicalPlanType::DropCatalogSchema(drop_schema) => {
+                let name = match &drop_schema.catalog_name {
+                    Some(catalog) => SchemaReference::Full {
+                        schema: drop_schema.schema_name.as_str().into(),
+                        catalog: catalog.as_str().into(),
+                    },
+                    None => SchemaReference::Bare {
+                        schema: drop_schema.schema_name.as_str().into(),
+                    },
+                };
+                Ok(LogicalPlan::Ddl(DdlStatement::DropCatalogSchema(
+                    DropCatalogSchema {
+                        name,
+                        if_exists: drop_schema.if_exists,
+                        cascade: drop_schema.cascade,
+                        schema: Arc::new(convert_required!(drop_schema.schema)?),
+                    },
+                )))
             }
             LogicalPlanType::DropView(dropview) => {
                 Ok(LogicalPlan::Ddl(DdlStatement::DropView(DropView {
@@ -1829,11 +1908,13 @@ impl AsLogicalPlan for LogicalPlanNode {
                 })
             }
             LogicalPlan::EmptyRelation(EmptyRelation {
-                produce_one_row, ..
+                produce_one_row,
+                schema,
             }) => Ok(LogicalPlanNode {
                 logical_plan_type: Some(LogicalPlanType::EmptyRelation(
                     protobuf::EmptyRelationNode {
                         produce_one_row: *produce_one_row,
+                        schema: Some(schema.try_into()?),
                     },
                 )),
             }),
@@ -2099,15 +2180,58 @@ impl AsLogicalPlan for LogicalPlanNode {
                     ))),
                 })
             }
-            LogicalPlan::Ddl(DdlStatement::CreateMemoryTable(_)) => Err(proto_error(
-                "LogicalPlan serde is not yet implemented for CreateMemoryTable",
-            )),
+            LogicalPlan::Ddl(DdlStatement::CreateMemoryTable(CreateMemoryTable {
+                name,
+                constraints,
+                input,
+                if_not_exists,
+                or_replace,
+                column_defaults,
+                temporary,
+            })) => {
+                let mut converted_column_defaults =
+                    Vec::with_capacity(column_defaults.len());
+                for (col_name, expr) in column_defaults {
+                    converted_column_defaults.push(protobuf::ColumnDefaultNode {
+                        name: col_name.clone(),
+                        expr: Some(serialize_expr(expr, extension_codec)?),
+                    });
+                }
+                Ok(LogicalPlanNode {
+                    logical_plan_type: Some(LogicalPlanType::CreateMemoryTable(
+                        Box::new(protobuf::CreateMemoryTableNode {
+                            name: Some(protobuf::TableReference::from(name.clone())),
+                            input: Some(Box::new(
+                                LogicalPlanNode::try_from_logical_plan(
+                                    input,
+                                    extension_codec,
+                                )?,
+                            )),
+                            constraints: Some(constraints.clone().into()),
+                            column_defaults: converted_column_defaults,
+                            if_not_exists: *if_not_exists,
+                            or_replace: *or_replace,
+                            temporary: *temporary,
+                        }),
+                    )),
+                })
+            }
             LogicalPlan::Ddl(DdlStatement::CreateIndex(_)) => Err(proto_error(
                 "LogicalPlan serde is not yet implemented for CreateIndex",
             )),
-            LogicalPlan::Ddl(DdlStatement::DropTable(_)) => Err(proto_error(
-                "LogicalPlan serde is not yet implemented for DropTable",
-            )),
+            LogicalPlan::Ddl(DdlStatement::DropTable(DropTable {
+                name,
+                if_exists,
+                schema,
+            })) => Ok(LogicalPlanNode {
+                logical_plan_type: Some(LogicalPlanType::DropTable(
+                    protobuf::DropTableNode {
+                        name: Some(protobuf::TableReference::from(name.clone())),
+                        if_exists: *if_exists,
+                        schema: Some(schema.try_into()?),
+                    },
+                )),
+            }),
             LogicalPlan::Ddl(DdlStatement::DropView(DropView {
                 name,
                 if_exists,
@@ -2121,9 +2245,30 @@ impl AsLogicalPlan for LogicalPlanNode {
                     },
                 )),
             }),
-            LogicalPlan::Ddl(DdlStatement::DropCatalogSchema(_)) => Err(proto_error(
-                "LogicalPlan serde is not yet implemented for DropCatalogSchema",
-            )),
+            LogicalPlan::Ddl(DdlStatement::DropCatalogSchema(DropCatalogSchema {
+                name,
+                if_exists,
+                cascade,
+                schema,
+            })) => {
+                let (schema_name, catalog_name) = match name {
+                    SchemaReference::Bare { schema } => (schema.to_string(), None),
+                    SchemaReference::Full { schema, catalog } => {
+                        (schema.to_string(), Some(catalog.to_string()))
+                    }
+                };
+                Ok(LogicalPlanNode {
+                    logical_plan_type: Some(LogicalPlanType::DropCatalogSchema(
+                        protobuf::DropCatalogSchemaNode {
+                            schema_name,
+                            catalog_name,
+                            if_exists: *if_exists,
+                            cascade: *cascade,
+                            schema: Some(schema.try_into()?),
+                        },
+                    )),
+                })
+            }
             LogicalPlan::Ddl(DdlStatement::CreateFunction(_)) => Err(proto_error(
                 "LogicalPlan serde is not yet implemented for CreateFunction",
             )),

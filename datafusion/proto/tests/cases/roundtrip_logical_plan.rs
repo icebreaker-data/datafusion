@@ -3896,3 +3896,61 @@ async fn roundtrip_range_partitioning_desc_nulls_last() -> Result<()> {
     assert_eq!(format!("{plan:?}"), format!("{logical_round_trip:?}"));
     Ok(())
 }
+
+async fn assert_ddl_roundtrip(sql: &str) -> Result<()> {
+    let ctx = SessionContext::new();
+    let plan = ctx.state().create_logical_plan(sql).await?;
+    let bytes = logical_plan_to_bytes(&plan)?;
+    let round_trip = logical_plan_from_bytes(&bytes, &ctx.task_ctx())?;
+    assert_eq!(format!("{plan:?}"), format!("{round_trip:?}"));
+    assert_eq!(plan, round_trip);
+    Ok(())
+}
+
+#[tokio::test]
+async fn roundtrip_create_memory_table() -> Result<()> {
+    assert_ddl_roundtrip("CREATE TABLE t AS SELECT 1 AS a").await?;
+    assert_ddl_roundtrip("CREATE TABLE IF NOT EXISTS t (a INT, b VARCHAR DEFAULT 'x')")
+        .await
+}
+
+#[tokio::test]
+async fn roundtrip_create_memory_table_flags() -> Result<()> {
+    assert_ddl_roundtrip("CREATE TABLE IF NOT EXISTS t AS SELECT 1 AS a").await?;
+    assert_ddl_roundtrip("CREATE OR REPLACE TABLE t AS SELECT 1 AS a").await?;
+    assert_ddl_roundtrip("CREATE TABLE c.s.t AS SELECT 1 AS a").await?;
+
+    // `temporary` is not reachable from SQL, so build the plan directly.
+    let ctx = SessionContext::new();
+    let plan = ctx
+        .state()
+        .create_logical_plan("CREATE TABLE t AS SELECT 1 AS a")
+        .await?;
+    let LogicalPlan::Ddl(datafusion_expr::DdlStatement::CreateMemoryTable(mut create)) =
+        plan
+    else {
+        panic!("expected CreateMemoryTable");
+    };
+    create.temporary = true;
+    let plan = LogicalPlan::Ddl(datafusion_expr::DdlStatement::CreateMemoryTable(create));
+    let bytes = logical_plan_to_bytes(&plan)?;
+    let round_trip = logical_plan_from_bytes(&bytes, &ctx.task_ctx())?;
+    assert_eq!(format!("{plan:?}"), format!("{round_trip:?}"));
+    assert!(matches!(
+        round_trip,
+        LogicalPlan::Ddl(datafusion_expr::DdlStatement::CreateMemoryTable(ref c)) if c.temporary
+    ));
+    Ok(())
+}
+
+#[tokio::test]
+async fn roundtrip_drop_table() -> Result<()> {
+    assert_ddl_roundtrip("DROP TABLE IF EXISTS t").await?;
+    assert_ddl_roundtrip("DROP TABLE c.s.t").await
+}
+
+#[tokio::test]
+async fn roundtrip_drop_catalog_schema() -> Result<()> {
+    assert_ddl_roundtrip("DROP SCHEMA IF EXISTS s CASCADE").await?;
+    assert_ddl_roundtrip("DROP SCHEMA c.s").await
+}
