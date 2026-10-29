@@ -2721,6 +2721,114 @@ impl<'de> serde::Deserialize<'de> for CoalescePartitionsExecNode {
         deserializer.deserialize_struct("datafusion.CoalescePartitionsExecNode", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for ColumnDefaultNode {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.name.is_empty() {
+            len += 1;
+        }
+        if self.expr.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("datafusion.ColumnDefaultNode", len)?;
+        if !self.name.is_empty() {
+            struct_ser.serialize_field("name", &self.name)?;
+        }
+        if let Some(v) = self.expr.as_ref() {
+            struct_ser.serialize_field("expr", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ColumnDefaultNode {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "name",
+            "expr",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Name,
+            Expr,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl serde::de::Visitor<'_> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "name" => Ok(GeneratedField::Name),
+                            "expr" => Ok(GeneratedField::Expr),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ColumnDefaultNode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct datafusion.ColumnDefaultNode")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ColumnDefaultNode, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut name__ = None;
+                let mut expr__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Name => {
+                            if name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("name"));
+                            }
+                            name__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Expr => {
+                            if expr__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("expr"));
+                            }
+                            expr__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(ColumnDefaultNode {
+                    name: name__.unwrap_or_default(),
+                    expr: expr__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("datafusion.ColumnDefaultNode", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ColumnIndex {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -3977,6 +4085,202 @@ impl<'de> serde::Deserialize<'de> for CreateExternalTableNode {
             }
         }
         deserializer.deserialize_struct("datafusion.CreateExternalTableNode", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for CreateMemoryTableNode {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.name.is_some() {
+            len += 1;
+        }
+        if self.input.is_some() {
+            len += 1;
+        }
+        if self.constraints.is_some() {
+            len += 1;
+        }
+        if !self.column_defaults.is_empty() {
+            len += 1;
+        }
+        if self.if_not_exists {
+            len += 1;
+        }
+        if self.or_replace {
+            len += 1;
+        }
+        if self.temporary {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("datafusion.CreateMemoryTableNode", len)?;
+        if let Some(v) = self.name.as_ref() {
+            struct_ser.serialize_field("name", v)?;
+        }
+        if let Some(v) = self.input.as_ref() {
+            struct_ser.serialize_field("input", v)?;
+        }
+        if let Some(v) = self.constraints.as_ref() {
+            struct_ser.serialize_field("constraints", v)?;
+        }
+        if !self.column_defaults.is_empty() {
+            struct_ser.serialize_field("columnDefaults", &self.column_defaults)?;
+        }
+        if self.if_not_exists {
+            struct_ser.serialize_field("ifNotExists", &self.if_not_exists)?;
+        }
+        if self.or_replace {
+            struct_ser.serialize_field("orReplace", &self.or_replace)?;
+        }
+        if self.temporary {
+            struct_ser.serialize_field("temporary", &self.temporary)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for CreateMemoryTableNode {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "name",
+            "input",
+            "constraints",
+            "column_defaults",
+            "columnDefaults",
+            "if_not_exists",
+            "ifNotExists",
+            "or_replace",
+            "orReplace",
+            "temporary",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Name,
+            Input,
+            Constraints,
+            ColumnDefaults,
+            IfNotExists,
+            OrReplace,
+            Temporary,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl serde::de::Visitor<'_> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "name" => Ok(GeneratedField::Name),
+                            "input" => Ok(GeneratedField::Input),
+                            "constraints" => Ok(GeneratedField::Constraints),
+                            "columnDefaults" | "column_defaults" => Ok(GeneratedField::ColumnDefaults),
+                            "ifNotExists" | "if_not_exists" => Ok(GeneratedField::IfNotExists),
+                            "orReplace" | "or_replace" => Ok(GeneratedField::OrReplace),
+                            "temporary" => Ok(GeneratedField::Temporary),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = CreateMemoryTableNode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct datafusion.CreateMemoryTableNode")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CreateMemoryTableNode, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut name__ = None;
+                let mut input__ = None;
+                let mut constraints__ = None;
+                let mut column_defaults__ = None;
+                let mut if_not_exists__ = None;
+                let mut or_replace__ = None;
+                let mut temporary__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Name => {
+                            if name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("name"));
+                            }
+                            name__ = map_.next_value()?;
+                        }
+                        GeneratedField::Input => {
+                            if input__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("input"));
+                            }
+                            input__ = map_.next_value()?;
+                        }
+                        GeneratedField::Constraints => {
+                            if constraints__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("constraints"));
+                            }
+                            constraints__ = map_.next_value()?;
+                        }
+                        GeneratedField::ColumnDefaults => {
+                            if column_defaults__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("columnDefaults"));
+                            }
+                            column_defaults__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::IfNotExists => {
+                            if if_not_exists__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ifNotExists"));
+                            }
+                            if_not_exists__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::OrReplace => {
+                            if or_replace__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("orReplace"));
+                            }
+                            or_replace__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Temporary => {
+                            if temporary__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("temporary"));
+                            }
+                            temporary__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(CreateMemoryTableNode {
+                    name: name__,
+                    input: input__,
+                    constraints: constraints__,
+                    column_defaults: column_defaults__.unwrap_or_default(),
+                    if_not_exists: if_not_exists__.unwrap_or_default(),
+                    or_replace: or_replace__.unwrap_or_default(),
+                    temporary: temporary__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("datafusion.CreateMemoryTableNode", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for CreateViewNode {
@@ -5825,6 +6129,294 @@ impl<'de> serde::Deserialize<'de> for dml_node::Type {
         deserializer.deserialize_any(GeneratedVisitor)
     }
 }
+impl serde::Serialize for DropCatalogSchemaNode {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.schema_name.is_empty() {
+            len += 1;
+        }
+        if self.catalog_name.is_some() {
+            len += 1;
+        }
+        if self.if_exists {
+            len += 1;
+        }
+        if self.cascade {
+            len += 1;
+        }
+        if self.schema.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("datafusion.DropCatalogSchemaNode", len)?;
+        if !self.schema_name.is_empty() {
+            struct_ser.serialize_field("schemaName", &self.schema_name)?;
+        }
+        if let Some(v) = self.catalog_name.as_ref() {
+            struct_ser.serialize_field("catalogName", v)?;
+        }
+        if self.if_exists {
+            struct_ser.serialize_field("ifExists", &self.if_exists)?;
+        }
+        if self.cascade {
+            struct_ser.serialize_field("cascade", &self.cascade)?;
+        }
+        if let Some(v) = self.schema.as_ref() {
+            struct_ser.serialize_field("schema", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DropCatalogSchemaNode {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "schema_name",
+            "schemaName",
+            "catalog_name",
+            "catalogName",
+            "if_exists",
+            "ifExists",
+            "cascade",
+            "schema",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            SchemaName,
+            CatalogName,
+            IfExists,
+            Cascade,
+            Schema,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl serde::de::Visitor<'_> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "schemaName" | "schema_name" => Ok(GeneratedField::SchemaName),
+                            "catalogName" | "catalog_name" => Ok(GeneratedField::CatalogName),
+                            "ifExists" | "if_exists" => Ok(GeneratedField::IfExists),
+                            "cascade" => Ok(GeneratedField::Cascade),
+                            "schema" => Ok(GeneratedField::Schema),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DropCatalogSchemaNode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct datafusion.DropCatalogSchemaNode")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DropCatalogSchemaNode, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut schema_name__ = None;
+                let mut catalog_name__ = None;
+                let mut if_exists__ = None;
+                let mut cascade__ = None;
+                let mut schema__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::SchemaName => {
+                            if schema_name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("schemaName"));
+                            }
+                            schema_name__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::CatalogName => {
+                            if catalog_name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("catalogName"));
+                            }
+                            catalog_name__ = map_.next_value()?;
+                        }
+                        GeneratedField::IfExists => {
+                            if if_exists__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ifExists"));
+                            }
+                            if_exists__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Cascade => {
+                            if cascade__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("cascade"));
+                            }
+                            cascade__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Schema => {
+                            if schema__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("schema"));
+                            }
+                            schema__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(DropCatalogSchemaNode {
+                    schema_name: schema_name__.unwrap_or_default(),
+                    catalog_name: catalog_name__,
+                    if_exists: if_exists__.unwrap_or_default(),
+                    cascade: cascade__.unwrap_or_default(),
+                    schema: schema__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("datafusion.DropCatalogSchemaNode", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for DropTableNode {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.name.is_some() {
+            len += 1;
+        }
+        if self.if_exists {
+            len += 1;
+        }
+        if self.schema.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("datafusion.DropTableNode", len)?;
+        if let Some(v) = self.name.as_ref() {
+            struct_ser.serialize_field("name", v)?;
+        }
+        if self.if_exists {
+            struct_ser.serialize_field("ifExists", &self.if_exists)?;
+        }
+        if let Some(v) = self.schema.as_ref() {
+            struct_ser.serialize_field("schema", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DropTableNode {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "name",
+            "if_exists",
+            "ifExists",
+            "schema",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Name,
+            IfExists,
+            Schema,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl serde::de::Visitor<'_> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "name" => Ok(GeneratedField::Name),
+                            "ifExists" | "if_exists" => Ok(GeneratedField::IfExists),
+                            "schema" => Ok(GeneratedField::Schema),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DropTableNode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct datafusion.DropTableNode")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DropTableNode, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut name__ = None;
+                let mut if_exists__ = None;
+                let mut schema__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Name => {
+                            if name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("name"));
+                            }
+                            name__ = map_.next_value()?;
+                        }
+                        GeneratedField::IfExists => {
+                            if if_exists__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ifExists"));
+                            }
+                            if_exists__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Schema => {
+                            if schema__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("schema"));
+                            }
+                            schema__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(DropTableNode {
+                    name: name__,
+                    if_exists: if_exists__.unwrap_or_default(),
+                    schema: schema__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("datafusion.DropTableNode", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for DropViewNode {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -6072,9 +6664,15 @@ impl serde::Serialize for EmptyRelationNode {
         if self.produce_one_row {
             len += 1;
         }
+        if self.schema.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("datafusion.EmptyRelationNode", len)?;
         if self.produce_one_row {
             struct_ser.serialize_field("produceOneRow", &self.produce_one_row)?;
+        }
+        if let Some(v) = self.schema.as_ref() {
+            struct_ser.serialize_field("schema", v)?;
         }
         struct_ser.end()
     }
@@ -6088,11 +6686,13 @@ impl<'de> serde::Deserialize<'de> for EmptyRelationNode {
         const FIELDS: &[&str] = &[
             "produce_one_row",
             "produceOneRow",
+            "schema",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ProduceOneRow,
+            Schema,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -6115,6 +6715,7 @@ impl<'de> serde::Deserialize<'de> for EmptyRelationNode {
                     {
                         match value {
                             "produceOneRow" | "produce_one_row" => Ok(GeneratedField::ProduceOneRow),
+                            "schema" => Ok(GeneratedField::Schema),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -6135,6 +6736,7 @@ impl<'de> serde::Deserialize<'de> for EmptyRelationNode {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut produce_one_row__ = None;
+                let mut schema__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ProduceOneRow => {
@@ -6143,10 +6745,17 @@ impl<'de> serde::Deserialize<'de> for EmptyRelationNode {
                             }
                             produce_one_row__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::Schema => {
+                            if schema__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("schema"));
+                            }
+                            schema__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(EmptyRelationNode {
                     produce_one_row: produce_one_row__.unwrap_or_default(),
+                    schema: schema__,
                 })
             }
         }
@@ -13837,6 +14446,15 @@ impl serde::Serialize for LogicalPlanNode {
                 logical_plan_node::LogicalPlanType::EmptyTableScan(v) => {
                     struct_ser.serialize_field("emptyTableScan", v)?;
                 }
+                logical_plan_node::LogicalPlanType::CreateMemoryTable(v) => {
+                    struct_ser.serialize_field("createMemoryTable", v)?;
+                }
+                logical_plan_node::LogicalPlanType::DropTable(v) => {
+                    struct_ser.serialize_field("dropTable", v)?;
+                }
+                logical_plan_node::LogicalPlanType::DropCatalogSchema(v) => {
+                    struct_ser.serialize_field("dropCatalogSchema", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -13898,6 +14516,12 @@ impl<'de> serde::Deserialize<'de> for LogicalPlanNode {
             "dml",
             "empty_table_scan",
             "emptyTableScan",
+            "create_memory_table",
+            "createMemoryTable",
+            "drop_table",
+            "dropTable",
+            "drop_catalog_schema",
+            "dropCatalogSchema",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -13935,6 +14559,9 @@ impl<'de> serde::Deserialize<'de> for LogicalPlanNode {
             CteWorkTableScan,
             Dml,
             EmptyTableScan,
+            CreateMemoryTable,
+            DropTable,
+            DropCatalogSchema,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -13989,6 +14616,9 @@ impl<'de> serde::Deserialize<'de> for LogicalPlanNode {
                             "cteWorkTableScan" | "cte_work_table_scan" => Ok(GeneratedField::CteWorkTableScan),
                             "dml" => Ok(GeneratedField::Dml),
                             "emptyTableScan" | "empty_table_scan" => Ok(GeneratedField::EmptyTableScan),
+                            "createMemoryTable" | "create_memory_table" => Ok(GeneratedField::CreateMemoryTable),
+                            "dropTable" | "drop_table" => Ok(GeneratedField::DropTable),
+                            "dropCatalogSchema" | "drop_catalog_schema" => Ok(GeneratedField::DropCatalogSchema),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -14240,6 +14870,27 @@ impl<'de> serde::Deserialize<'de> for LogicalPlanNode {
                                 return Err(serde::de::Error::duplicate_field("emptyTableScan"));
                             }
                             logical_plan_type__ = map_.next_value::<::std::option::Option<_>>()?.map(logical_plan_node::LogicalPlanType::EmptyTableScan)
+;
+                        }
+                        GeneratedField::CreateMemoryTable => {
+                            if logical_plan_type__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("createMemoryTable"));
+                            }
+                            logical_plan_type__ = map_.next_value::<::std::option::Option<_>>()?.map(logical_plan_node::LogicalPlanType::CreateMemoryTable)
+;
+                        }
+                        GeneratedField::DropTable => {
+                            if logical_plan_type__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dropTable"));
+                            }
+                            logical_plan_type__ = map_.next_value::<::std::option::Option<_>>()?.map(logical_plan_node::LogicalPlanType::DropTable)
+;
+                        }
+                        GeneratedField::DropCatalogSchema => {
+                            if logical_plan_type__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dropCatalogSchema"));
+                            }
+                            logical_plan_type__ = map_.next_value::<::std::option::Option<_>>()?.map(logical_plan_node::LogicalPlanType::DropCatalogSchema)
 ;
                         }
                     }
